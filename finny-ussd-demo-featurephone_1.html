@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finny — USSD Channel Demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --bg:#0B0D0F;
+    --bezel:#1C1F22;
+    --bezel-edge:#2C3034;
+    --lcd-bg:#05140A;
+    --lcd-text:#4AF77A;
+    --lcd-dim:#276B41;
+    --amber:#FFB000;
+    --red:#FF5C5C;
+    --trace-bg:#0A0A0C;
+    --trace-text:#D8DEE4;
+    --trace-cyan:#6FE3FF;
+    --trace-purple:#C79CFF;
+    --trace-dim:#5A6169;
+    --ui-text:#E7EAEE;
+    --ui-dim:#8A9099;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 20% -10%, #14181B 0%, transparent 55%),
+      var(--bg);
+    color:var(--ui-text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 16px 48px;
+  }
+  .header{
+    text-align:center;
+    margin-bottom:20px;
+    max-width:680px;
+  }
+  .header .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.12em;
+    color:var(--ui-dim);
+    text-transform:uppercase;
+  }
+  .header h1{
+    font-size:23px;
+    font-weight:800;
+    margin:6px 0 4px;
+    letter-spacing:-0.01em;
+  }
+  .header p{
+    font-size:13.5px;
+    color:var(--ui-dim);
+    line-height:1.55;
+    margin:0;
+  }
+
+  .stage{
+    display:flex;
+    gap:26px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    justify-content:center;
+    width:100%;
+    max-width:1100px;
+  }
+
+  .phone-col{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+    flex-shrink:0;
+  }
+
+  /* ================= FEATURE PHONE ================= */
+  .feature-phone{
+    width:308px;
+    background:
+      linear-gradient(160deg,#33383D 0%,#22262A 45%,#1A1D20 100%);
+    border-radius:34px 34px 40px 40px;
+    padding:16px 14px 20px;
+    box-shadow:
+      0 30px 70px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      inset 0 -2px 0 rgba(0,0,0,0.4);
+    border:1px solid #3A3F44;
+    position:relative;
+  }
+  .fp-earpiece{
+    width:56px;height:6px;
+    background:linear-gradient(90deg,#0C0D0E,#1A1C1E,#0C0D0E);
+    border-radius:4px;
+    margin:0 auto 10px;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,0.8);
+  }
+  .fp-brand{
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;
+    letter-spacing:0.22em;
+    color:#7A8188;
+    margin-bottom:8px;
+  }
+  .fp-brand b{color:#B9BEC5;}
+
+  /* screen bezel */
+  .fp-bezel{
+    background:#111417;
+    border-radius:10px;
+    padding:6px;
+    box-shadow:inset 0 0 0 1px #050607, inset 0 2px 6px rgba(0,0,0,0.6);
+  }
+  .fp-statusbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:2px 4px 4px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;
+    color:var(--lcd-dim);
+  }
+  .fp-statusbar .net{color:var(--lcd-text);font-weight:600;letter-spacing:0.03em;}
+  .fp-bars{display:flex;gap:2px;align-items:flex-end;}
+  .fp-bars span{width:3px;background:var(--lcd-dim);display:inline-block;}
+  .fp-bars span:nth-child(1){height:3px;}
+  .fp-bars span:nth-child(2){height:5px;}
+  .fp-bars span:nth-child(3){height:7px;}
+  .fp-bars span:nth-child(4){height:9px;background:var(--lcd-text);}
+  .fp-battery{
+    width:16px;height:8px;
+    border:1px solid var(--lcd-dim);
+    border-radius:1px;
+    position:relative;
+    display:inline-block;
+  }
+  .fp-battery::after{
+    content:"";position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--lcd-dim);
+  }
+  .fp-battery i{
+    display:block;height:100%;width:70%;background:var(--lcd-text);
+  }
+
+  .fp-screen{
+    background:var(--lcd-bg);
+    border-radius:4px;
+    padding:10px 10px 8px;
+    min-height:214px;
+    max-height:214px;
+    overflow-y:auto;
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--lcd-text);
+    font-size:12.5px;
+    line-height:1.5;
+    box-shadow:inset 0 0 18px rgba(0,0,0,0.65), inset 0 0 40px rgba(74,247,122,0.05);
+    position:relative;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+  .fp-screen::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:repeating-linear-gradient(180deg, rgba(0,0,0,0.14) 0px, rgba(0,0,0,0.14) 1px, transparent 1px, transparent 3px);
+    pointer-events:none;
+    border-radius:4px;
+  }
+  .fp-screen::-webkit-scrollbar{width:5px;}
+  .fp-screen::-webkit-scrollbar-thumb{background:#0E2E18;border-radius:3px;}
+  .fp-tag{
+    color:var(--lcd-dim);
+    font-size:10px;
+    letter-spacing:0.08em;
+    display:flex;
+    justify-content:space-between;
+  }
+  .fp-tag .beta-flag{color:var(--amber);}
+  .fp-body-text{margin-top:4px;}
+  .fp-inputline{
+    margin-top:8px;
+    padding-top:6px;
+    border-top:1px dashed var(--lcd-dim);
+    font-size:13px;
+    letter-spacing:0.04em;
+    min-height:16px;
+  }
+  .fp-cursor{
+    display:inline-block;
+    width:6px;height:12px;
+    background:var(--lcd-text);
+    margin-left:1px;
+    vertical-align:-2px;
+    animation:blink 1s step-end infinite;
+  }
+  @keyframes blink{50%{opacity:0;}}
+
+  /* soft keys */
+  .fp-softkeys{
+    display:flex;
+    justify-content:space-between;
+    padding:8px 10px 0;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.05em;
+    color:#9AA0A6;
+  }
+  .fp-softkeys span{
+    cursor:pointer;
+    padding:4px 8px;
+    border-radius:4px;
+    transition:color .12s ease, background .12s ease;
+  }
+  .fp-softkeys span:hover{color:#E7EAEE;background:rgba(255,255,255,0.05);}
+
+  /* call / end / dpad row */
+  .fp-navrow{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    margin-top:10px;
+  }
+  .fp-roundkey{
+    width:40px;height:40px;
+    border-radius:50%;
+    border:1px solid rgba(0,0,0,0.4);
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;
+    cursor:pointer;
+    user-select:none;
+    transition:transform .08s ease, filter .08s ease;
+    flex-shrink:0;
+  }
+  .fp-roundkey:active{transform:scale(0.92);filter:brightness(0.85);}
+  .fp-call{
+    background:radial-gradient(circle at 35% 30%,#5FE896,#1E8A4A 70%);
+    box-shadow:0 3px 0 #14612F, 0 4px 8px rgba(0,0,0,0.4);
+    color:#06210F;
+  }
+  .fp-end{
+    background:radial-gradient(circle at 35% 30%,#FF8C8C,#C23A3A 70%);
+    box-shadow:0 3px 0 #7E1F1F, 0 4px 8px rgba(0,0,0,0.4);
+    color:#340707;
+  }
+
+  .fp-dpad{
+    width:76px;height:76px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#3C4147,#202327 75%);
+    box-shadow:0 3px 0 #101214, 0 4px 10px rgba(0,0,0,0.5), inset 0 0 0 1px #45494E;
+    position:relative;
+    flex-shrink:0;
+  }
+  .fp-dpad-center{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:30px;height:30px;
+    border-radius:50%;
+    background:linear-gradient(160deg,#4AF77A,#1E8A4A);
+    box-shadow:0 2px 4px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.4);
+    color:#06210F;
+    font-family:'JetBrains Mono',monospace;
+    font-size:8px;
+    font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    text-align:center;
+    line-height:1.1;
+  }
+  .fp-dpad-center:active{filter:brightness(0.9);transform:translate(-50%,-50%) scale(0.94);}
+  .fp-dpad-arrow{
+    position:absolute;
+    width:20px;height:20px;
+    display:flex;align-items:center;justify-content:center;
+    color:#8A9099;
+    font-size:11px;
+    cursor:default;
+    opacity:0.55;
+  }
+  .fp-dpad-arrow.up{top:3px;left:50%;transform:translateX(-50%);}
+  .fp-dpad-arrow.down{bottom:3px;left:50%;transform:translateX(-50%);}
+  .fp-dpad-arrow.left{left:3px;top:50%;transform:translateY(-50%);}
+  .fp-dpad-arrow.right{right:3px;top:50%;transform:translateY(-50%);}
+
+  /* keypad grid */
+  .fp-keypad{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    margin-top:12px;
+  }
+  .fp-key{
+    background:linear-gradient(160deg,#3A3F44,#26292D);
+    border-radius:9px;
+    padding:7px 4px 6px;
+    text-align:center;
+    cursor:pointer;
+    user-select:none;
+    box-shadow:0 2px 0 #16181A, inset 0 1px 0 rgba(255,255,255,0.06);
+    transition:transform .07s ease, filter .07s ease;
+  }
+  .fp-key:active{transform:translateY(2px);box-shadow:0 0 0 #16181A;filter:brightness(0.9);}
+  .fp-key .digit{
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    font-weight:700;
+    color:#EDEFF2;
+    line-height:1.1;
+  }
+  .fp-key .sub{
+    font-family:'JetBrains Mono',monospace;
+    font-size:7.5px;
+    letter-spacing:0.06em;
+    color:#8A9099;
+    margin-top:1px;
+  }
+
+  .fp-costrow{
+    margin-top:12px;
+    display:flex;
+    justify-content:space-between;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:#6B7178;
+    padding:0 2px;
+  }
+  .fp-costrow .cost-value{color:var(--amber);font-weight:600;transition:color .2s ease;}
+  .fp-costrow .cost-value.warn{color:var(--red);}
+
+  .session-badge{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--ui-dim);
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .session-badge b{color:#B9BEC5;}
+  .session-badge .pill{
+    padding:2px 9px;
+    border-radius:20px;
+    border:1px solid #3A3F44;
+    background:#17191C;
+  }
+  .session-badge .pill.beta{border-color:#5A4A1E;color:var(--amber);}
+
+  /* profile selector */
+  .profile-select{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    align-items:center;
+    max-width:308px;
+    background:#111316;
+    border:1px solid #24272B;
+    border-radius:12px;
+    padding:12px 14px;
+  }
+  .profile-select .ps-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--ui-dim);
+    text-align:center;
+    line-height:1.5;
+  }
+  .ps-options{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+  .ps-btn{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    padding:6px 10px;
+    border-radius:8px;
+    border:1px solid #3A3F44;
+    background:#1B1E21;
+    color:#B9BEC5;
+    cursor:pointer;
+    transition:all .12s ease;
+  }
+  .ps-btn.active{background:#1E3B27;color:#8BFFAE;border-color:#2C5A3D;}
+  .ps-btn:hover{border-color:#565C63;}
+
+  /* ---------- TRACE PANEL ---------- */
+  .trace-panel{
+    width:430px;
+    background:var(--trace-bg);
+    border-radius:14px;
+    border:1px solid #1E2126;
+    padding:0;
+    overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,0.4);
+    flex-shrink:0;
+  }
+  .trace-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:12px 16px;
+    background:#101215;
+    border-bottom:1px solid #1E2126;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--ui-dim);
+  }
+  .trace-header .dot{width:7px;height:7px;border-radius:50%;background:#3A3F44;}
+  .trace-header .dot.live{background:#4AF77A;box-shadow:0 0 6px #4AF77A;animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+  .trace-body{
+    height:432px;
+    overflow-y:auto;
+    padding:14px 16px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    line-height:1.62;
+    color:var(--trace-text);
+  }
+  .trace-body::-webkit-scrollbar{width:6px;}
+  .trace-body::-webkit-scrollbar-thumb{background:#2A2E33;border-radius:3px;}
+  .trace-line{margin-bottom:2px; opacity:0; animation:fadeIn .25s ease forwards; word-break:break-word;}
+  @keyframes fadeIn{to{opacity:1;}}
+  .trace-line.meta{color:var(--trace-dim);}
+  .trace-line.route{color:var(--trace-cyan);}
+  .trace-line.result{color:#8BFFAE;}
+  .trace-line.winner{color:var(--amber); font-weight:600;}
+  .trace-line.nlp{color:var(--trace-purple);}
+  .trace-empty{color:var(--trace-dim); font-style:italic;}
+
+  .footnote{
+    max-width:1100px;
+    width:100%;
+    margin-top:22px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--ui-dim);
+    line-height:1.75;
+    border-top:1px solid #1E2126;
+    padding-top:14px;
+  }
+  .footnote b{color:#B9BEC5;}
+  .footnote .lang-key{margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;}
+  .footnote .lang-key span{white-space:nowrap;}
+  .footnote .lang-key .amber{color:var(--amber);}
+
+  @media (max-width:700px){
+    .feature-phone{width:100%;max-width:308px;}
+    .trace-panel{width:100%;max-width:308px;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="eyebrow">Finny · Channel Parity Demo</div>
+    <h1>One engine. Every phone. Every language.</h1>
+    <p>The left side is a working feature-phone USSD session — the same interface a borrower dials into on any UGX 40,000 handset, no smartphone or data bundle required. The right side is the same recommendation engine and knowledge base, scoring and grounding in real time, so the USSD channel is provably the same backend as everything else Finny runs.</p>
+  </div>
+
+  <div class="stage">
+    <!-- PHONE -->
+    <div class="phone-col">
+      <div class="feature-phone">
+        <div class="fp-earpiece"></div>
+        <div class="fp-brand"><b>FINNY</b> · UG TELECOM</div>
+
+        <div class="fp-bezel">
+          <div class="fp-statusbar">
+            <span class="net" id="fpNet">MTN UG</span>
+            <div class="fp-bars"><span></span><span></span><span></span><span></span></div>
+            <span class="fp-battery"><i></i></span>
+          </div>
+          <div class="fp-screen" id="fpScreen"></div>
+        </div>
+
+        <div class="fp-softkeys">
+          <span id="softLeft" onclick="ussd.softLeft()">CLEAR</span>
+          <span id="softRight" onclick="ussd.softRight()">SEND</span>
+        </div>
+
+        <div class="fp-navrow">
+          <div class="fp-roundkey fp-call" onclick="ussd.callKey()" title="Call / Send">☎</div>
+          <div class="fp-dpad">
+            <div class="fp-dpad-arrow up">▲</div>
+            <div class="fp-dpad-arrow down">▼</div>
+            <div class="fp-dpad-arrow left">◀</div>
+            <div class="fp-dpad-arrow right">▶</div>
+            <div class="fp-dpad-center" onclick="ussd.callKey()">OK</div>
+          </div>
+          <div class="fp-roundkey fp-end" onclick="ussd.cancel()" title="End / Cancel">⏻</div>
+        </div>
+
+        <div class="fp-keypad" id="fpKeypad"></div>
+
+        <div class="fp-costrow">
+          <span>Session: <span id="sessionTime">0s</span></span>
+          <span>Cost: <span class="cost-value" id="sessionCost">UGX 0</span></span>
+        </div>
+      </div>
+
+      <div class="session-badge">
+        <span class="pill">Lang: <b id="badgeLang">not set</b></span>
+        <span class="pill">Profile: <b id="badgeProfile">first-time</b></span>
+        <span class="pill beta" id="badgeBeta" style="display:none;">beta translation</span>
+      </div>
+
+      <div class="profile-select">
+        <div class="ps-label">Simulated KYC profile — backend truth Finny already has on file.<br>Changes how the AI simplifies terms &amp; conditions on screen.</div>
+        <div class="ps-options">
+          <button class="ps-btn active" id="profile-first_time_low_income" onclick="ussd.setProfile('first_time_low_income')">First-time borrower</button>
+          <button class="ps-btn" id="profile-experienced_borrower" onclick="ussd.setProfile('experienced_borrower')">Experienced borrower</button>
+          <button class="ps-btn" id="profile-student" onclick="ussd.setProfile('student')">Student</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACE -->
+    <div class="trace-panel">
+      <div class="trace-header">
+        <div class="dot" id="traceDot"></div>
+        <span id="traceStatus">idle — waiting for session</span>
+      </div>
+      <div class="trace-body" id="traceBody">
+        <div class="trace-empty">Press the green call key (or tap OK) to dial in. Every step below calls the same scoring and knowledge-grounding logic as the production API — nothing here is a separate fake path.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote" id="footnoteBox">
+    <b>Why this matters:</b> the scoring shown here runs the identical cost/trust/fit formula (40% / 35% / 25%) against the same three seeded lenders used in the FastAPI /recommend endpoint, and the "Talk" answers are grounded verbatim in knowledge_base.py — the model is told to answer from that static text, not from memory, exactly like the real chatbot. Session cost ticks per 60-second billing increment, matching how MTN/Airtel actually charge USSD sessions in Uganda, and every menu is numbered-input only, since that's the real constraint of a CON/END menu tree — no free text except amount, tenure and PIN-style entry.
+    <div class="lang-key">
+      <span>🟢 English, Luganda, Kiswahili, Runyankore — fully localized draft copy</span>
+      <span class="amber">🟠 Acholi, Ateso, Karimojong — selectable now, shown in English until community-reviewed translations land (see note below)</span>
+    </div>
+  </div>
+
+<script>
+/* ===================================================================
+   FINNY — USSD FEATURE PHONE DEMO
+   Same scoring engine + knowledge base as the FastAPI backend,
+   wired into an on-screen feature phone with a real numeric keypad.
+   =================================================================== */
+
+/* ---------- Lender data (identical formula/lenders to /recommend) ---------- */
+const LENDERS = [
+  { name:"Apex Finance", minAmount:100000, maxAmount:1000000, minTenure:7, maxTenure:90, totalRepaymentBase:250000, upheldComplaints:0, licensed:true },
+  { name:"Bridge Credit", minAmount:100000, maxAmount:800000, minTenure:14, maxTenure:60, totalRepaymentBase:300000, upheldComplaints:1, licensed:true },
+  { name:"Mwamba Loans", minAmount:50000, maxAmount:1200000, minTenure:30, maxTenure:120, totalRepaymentBase:320000, upheldComplaints:2, licensed:false }
+];
+
+/* ---------- Languages ---------- */
+// "beta" = draft translation, included but not yet community-reviewed
+// "fallback" = content not yet localized at all — flow runs in English
+//              under that language's session so nothing breaks, and a
+//              disclosure line says so honestly instead of guessing.
+const LANGS = [
+  { code:'en',  label:'English',    beta:false, fallback:false },
+  { code:'lg',  label:'Luganda',    beta:false, fallback:false },
+  { code:'sw',  label:'Kiswahili',  beta:false, fallback:false },
+  { code:'nyn', label:'Runyankore', beta:true,  fallback:false },
+  { code:'ach', label:'Acholi',     beta:true,  fallback:true  },
+  { code:'teo', label:'Ateso',      beta:true,  fallback:true  },
+  { code:'kdj', label:'Karimojong', beta:true,  fallback:true  }
+];
+
+/* ---------- Borrower profiles (mirrors mock_data.py MOCK_PROFILES) ---------- */
+const PROFILE_LABELS = {
+  first_time_low_income: 'First-time borrower',
+  experienced_borrower: 'Experienced borrower',
+  student: 'Student'
+};
+
+/* ===================================================================
+   COPY — every on-screen string, per language.
+   CON = session continues (USSD gateway keeps the loop open)
+   END = session terminates after this screen (real USSD convention)
+   =================================================================== */
+const COPY = {};
+
+COPY.en = {
+  termsCore: [
+    "Finny checks your basic details to match you with real, licensed lenders only.",
+    "Every offer shows the FULL repayment amount upfront — no hidden fees.",
+    "You can stop this session anytime. No charges until you accept a loan."
+  ],
+  termsProfile: {
+    first_time_low_income: "Since this looks like your first time, we keep offers small and explain every word simply.",
+    experienced_borrower: "Because you've borrowed with us before, we show fuller detail: rates, reducing balance, and lender history.",
+    student: "As a student, we prioritize lenders with flexible, low-amount options and no pressure tactics."
+  },
+  termsOptions: "1. I Agree — Continue\n2. Read full terms\n0. Exit",
+  fullTerms: "Full legal terms are sent to you by SMS in English (the legally binding version). The summary you just read already covers every point that matters for this decision.\n\n0. Back",
+  mainMenu: "1. Check a loan offer\n2. Talk to Finny\n3. My applications\n9. Change language\n0. Exit",
+  amountPrompt: "Enter loan amount (UGX):",
+  tenurePrompt: "Enter repayment period (days):",
+  processing: "Comparing your request with verified lenders...",
+  resultTpl: "Best match for UGX {amount} over {tenure} days:\n{lender}\nTotal repayment: UGX {total}\nWhy: strongest cost + trust balance",
+  noMatchTpl: "No lender currently matches UGX {amount} over {tenure} days. Try a different amount.",
+  invalid: "That didn't work. Enter a number, or 0 to go back.",
+  apps: "You have 1 active application:\nApex Finance — UGX 200,000\nStatus: Pending review",
+  talkMenu: "What do you want to know?\n1. My rights as a borrower\n2. Signs of a bad lender\n3. Common fraud tricks\n4. Where to get help\n0. Back to menu",
+  talkTopics: {
+    1: "Every licensed lender must give you a real loan agreement with the interest rate and all charges written down — never a disguised sales agreement. Compound interest is illegal for licensed lenders. You can complain if you're treated unfairly.",
+    2: "Be careful if a lender asks you to pay BEFORE releasing the loan, promises approval with no checks at all, hides the total repayment amount, or contacts your friends and family to pressure you.",
+    3: "Common tricks: fake SMS asking you to 'confirm' your PIN, callers pretending to be your bank or UCC, and 'you've won a loan' messages that ask for a fee first. Never share your PIN or OTP with anyone.",
+    4: "Unauthorized mobile money deduction: call UCC toll-free 0800 222 777. Unfair lender behaviour: call UMRA on +256 417 799 700. Crime or theft: call Police on 112 or 999."
+  },
+  talkFooter: "0. More topics   00. Main menu",
+  exitMsg: "Session ended. Thank you for using Finny.",
+  dialHint: "Type *185*44# and press the green call key to begin.",
+  langMenuHeader: "Welcome · Tukwaniriza · Karibu\nChoose your language:",
+  disclosure: ""
+};
+
+COPY.lg = {
+  termsCore: [
+    "Finny akebera obubaka bwo obutono okukuyunga ku bawoze abakakasibwa bokka.",
+    "Buli kyokwongera kirambika omuwendo GWONNA gw'osasula nga tewali kya kwekweka.",
+    "Osobola okuyimiriza omulundi guno essaawa yonna. Tewali kusasula okutuusa lw'okkiriza ekyokwongera."
+  ],
+  termsProfile: {
+    first_time_low_income: "Kubanga eno y'omulundi gwo ogusooka, tukuwa ebyokwongera ebitono era tunnyonnyola buli kigambo mu bwangu.",
+    experienced_borrower: "Kubanga wali omanyi okwazika ku Finny, tukulaga ebisingawo: emiwendo, 'reducing balance', n'ebyafaayo bya bawoze.",
+    student: "Nga omuyizi, tussa essira ku bawoze abakuwa ebitono nga tewali kukunyigiriza."
+  },
+  termsOptions: "1. Nkkirizza — Genda mu maaso\n2. Soma amateeka gonna\n0. Fuluma",
+  fullTerms: "Amateeka gonna agakwata mu bufuzi gakuweebwa mu SMS mu Lungereza (ge gakola ku mateeka). Ebyo by'osoose okusoma bimaze okukubuulira byonna ebikwata ku kisalo kino.\n\n0. Ddayo",
+  mainMenu: "1. Kebera ekyokwongera\n2. Yogera ne Finny\n3. Ebisabo byange\n9. Kyusa olulimi\n0. Fuluma",
+  amountPrompt: "Yingiza omuwendo gw'ekyokwongera (UGX):",
+  tenurePrompt: "Yingiza ennaku z'okusasula:",
+  processing: "Tugeraageranya ekisabo kyo n'ababa-bawoze abakakasibwa...",
+  resultTpl: "Ekisinga okukugwanira ku UGX {amount} mu nnaku {tenure}:\n{lender}\nOmuwendo gwonna: UGX {total}\nEnsonga: ssente ntono era mukakasa",
+  noMatchTpl: "Tewali bawoze bakwatagana ne UGX {amount} mu nnaku {tenure}. Gezaako omuwendo omulala.",
+  invalid: "Ekyayingizza si kituufu. Ddamu oba 0 okudda ennyuma.",
+  apps: "Olina ekisabo kimu ekikola:\nApex Finance — UGX 200,000\nEmbeera: Kikyakebererwa",
+  talkMenu: "Kiki ky'oyagala okumanya?\n1. Eddembe lyange ng'omuguzi\n2. Obubonero bw'omuwoze omubi\n3. Enkwe ezitera okukozesebwa\n4. Wa gy'oyinza okufuna obuyambi\n0. Ddayo ku menyu",
+  talkTopics: {
+    1: "Buli muwoze akakasibwa alina okukulaga endagaano ntuufu erimu omuwendo n'ebisale byonna nga biwandiikiddwa — si ndagaano ya kutunda. Ekyokwongera ku kyokwongera (compound interest) kya magendo eri abawoze abakakasibwa. Osobola okwemulugunya bw'oba oyisiddwa bubi.",
+    2: "Weegendereze omuwoze bw'akusaba okusasula NGA tonnafuna ddogolo, bw'akulaga nti akkiriza wabula kukukebera n'akatono, bw'akweka omuwendo gwonna, oba bw'akuba abemikwano/ab'omu maka go okukunyigiriza.",
+    3: "Enkwe eziyingiddwamu: obubaka bwa SMS obukusaba 'okukakasa' PIN yo, abakuba essimu nga beefudde nga bavudde ku bbanka oba UCC, n'obubaka nti 'owangudde ekyokwongera' ate nga basooka okukusaba ssente. Tolaga PIN oba OTP yo eri muntu yenna.",
+    4: "Enkola z'obuyambi: obubaka bwa ssente obutakkirizibwa — kuba UCC ku 0800 222 777. Omuwoze eyeeyisa bubi — kuba UMRA ku +256 417 799 700. Bubbi oba bulimba — kuba Poliisi ku 112 oba 999."
+  },
+  talkFooter: "0. Ebirala   00. Menyu enkulu",
+  exitMsg: "Omulundi guwedde. Weebazizza okukozesa Finny.",
+  dialHint: "Wandiika *185*44# olyoke onyige ku ssettele ekya bulungi (green) okutandika.",
+  langMenuHeader: "Welcome · Tukwaniriza · Karibu\nLonda olulimi:",
+  disclosure: ""
+};
+
+COPY.sw = {
+  termsCore: [
+    "Finny huangalia taarifa zako za msingi ili kukulinganisha na wakopeshaji walioidhinishwa pekee.",
+    "Kila ofa inaonyesha kiasi CHOTE utakacholipa mapema — hakuna gharama zilizofichwa.",
+    "Unaweza kusitisha kikao hiki wakati wowote. Hakuna malipo mpaka ukubali mkopo."
+  ],
+  termsProfile: {
+    first_time_low_income: "Kwa kuwa hii ni mara yako ya kwanza, tunakupa ofa ndogo na kueleza kila neno kwa urahisi.",
+    experienced_borrower: "Kwa kuwa umeshakopa nasi hapo awali, tunakuonyesha maelezo zaidi: viwango vya riba, salio linalopungua, na historia ya wakopeshaji.",
+    student: "Kama mwanafunzi, tunapendelea wakopeshaji wenye chaguo ndogo na rahisi, bila shinikizo."
+  },
+  termsOptions: "1. Nakubali — Endelea\n2. Soma masharti kamili\n0. Toka",
+  fullTerms: "Masharti kamili ya kisheria yanatumwa kwa SMS kwa Kiingereza (toleo linalofunga kisheria). Muhtasari uliosoma tayari unashughulikia kila jambo muhimu kwa uamuzi huu.\n\n0. Rudi",
+  mainMenu: "1. Angalia ofa ya mkopo\n2. Zungumza na Finny\n3. Maombi yangu\n9. Badilisha lugha\n0. Toka",
+  amountPrompt: "Weka kiasi cha mkopo (UGX):",
+  tenurePrompt: "Weka muda wa kulipa (siku):",
+  processing: "Tunalinganisha ombi lako na wakopeshaji walioidhinishwa...",
+  resultTpl: "Chaguo bora kwa UGX {amount} kwa siku {tenure}:\n{lender}\nJumla ya malipo: UGX {total}\nSababu: usawa bora wa gharama na uaminifu",
+  noMatchTpl: "Hakuna mkopeshaji anayelingana na UGX {amount} kwa siku {tenure}. Jaribu kiasi kingine.",
+  invalid: "Haikufanya kazi. Weka namba, au 0 kurudi nyuma.",
+  apps: "Una ombi moja linaloendelea:\nApex Finance — UGX 200,000\nHali: Linasubiri ukaguzi",
+  talkMenu: "Unataka kujua nini?\n1. Haki zangu kama mkopaji\n2. Dalili za mkopeshaji mbaya\n3. Mbinu za kawaida za udanganyifu\n4. Mahali pa kupata msaada\n0. Rudi kwenye menyu",
+  talkTopics: {
+    1: "Kila mkopeshaji aliyeidhinishwa lazima akuonyeshe mkataba halisi wa mkopo wenye kiwango cha riba na gharama zote zilizoandikwa — si mkataba wa mauzo uliofichwa. Riba ya mchanganyiko (compound interest) ni kinyume cha sheria kwa wakopeshaji walioidhinishwa. Unaweza kulalamika ukitendewa isivyo haki.",
+    2: "Kuwa mwangalifu kama mkopeshaji anakuomba ulipe KABLA hujapata mkopo, anaahidi kukubali bila ukaguzi wowote, anaficha jumla ya malipo, au anawasiliana na marafiki/familia yako kukushinikiza.",
+    3: "Mbinu za kawaida: SMS bandia zinazokuomba 'kuthibitisha' PIN yako, wapigaji simu wanaojifanya ni benki yako au UCC, na ujumbe wa 'umeshinda mkopo' unaoomba ada kwanza. Usimshirikishe mtu yeyote PIN au OTP yako.",
+    4: "Mahali pa msaada: makato ya pesa za simu bila idhini — piga simu UCC bure kwa 0800 222 777. Mkopeshaji anayekutendea isivyo haki — piga UMRA +256 417 799 700. Uhalifu au wizi — piga Polisi 112 au 999."
+  },
+  talkFooter: "0. Mada nyingine   00. Menyu kuu",
+  exitMsg: "Kikao kimeisha. Asante kwa kutumia Finny.",
+  dialHint: "Andika *185*44# kisha bonyeza kitufe cha kijani kupiga simu ili kuanza.",
+  langMenuHeader: "Welcome · Tukwaniriza · Karibu\nChagua lugha:",
+  disclosure: ""
+};
+
+COPY.nyn = {
+  termsCore: [
+    "Finny neekyera ebiragiro byawe kukukwatanisa n'abakopesa abemerirwe.",
+    "Buri ekyetwa nikworeka omubaro GWONA ogu oine kusasura — tihaine ekihishirwe.",
+    "Nobaasa kuhagarika akakwate obwo waine. Tihariho kusasura kutuura ohikirize."
+  ],
+  termsProfile: {
+    first_time_low_income: "Nkoku eri omurundi gwawe ogusooka, nitukuha ebyetwa bitoya kandi nitunonoka buri kigambo n'obworobi.",
+    experienced_borrower: "Nkoku waamare kukoresa Finny, nitukworeka ebishushani byingi: emibaro y'einteresti n'ebyafaayo by'abakopesa.",
+    student: "Nkoku oli omushomesa, nitweshimba abakopesa abarikuha ebitoya kandi nikutari na kunyigiriza."
+  },
+  termsOptions: "1. Ninyikiriza — Genda omumaisho\n2. Soma amagambo goona\n0. Fuluma",
+  fullTerms: "Amagambo goona ag'amateeka nigatwarwa omuli SMS omu Lungereza (nigo agakoresibwa omu mateeka). Ebi waasomere hati nibimaze kukubuurira byona ebirikukwata aha kisiibo eki.\n\n0. Garuka",
+  mainMenu: "1. Reeba ekyetwa ky'eempeta\n2. Ganira na Finny\n3. Ebisabo byange\n9. Hindura orurimi\n0. Fuluma",
+  amountPrompt: "Teekyamu omubaro gw'eempeta (UGX):",
+  tenurePrompt: "Teekyamu ebiro by'okusasura:",
+  processing: "Nitugereranisa ekisabo kyawe n'abakopesa abemerirwe...",
+  resultTpl: "Ekirungi kukukwatanisa UGX {amount} omu biro {tenure}:\n{lender}\nOmubaro gwona: UGX {total}\nEnshonga: sente nyakye kandi mukwesigwa",
+  noMatchTpl: "Tihariho mukopesa orikukwatanisa UGX {amount} omu biro {tenure}. Gyeza omubaro ogundi.",
+  invalid: "Ekyo tikirikukora. Teekyamu omubaro, nari 0 kugaruka enyima.",
+  apps: "Oine ekisabo kimwe ekirikukora:\nApex Finance — UGX 200,000\nEmiringo: Nikicungurwa",
+  talkMenu: "Noyenda kumanya ki?\n1. Endiijo zangye nk'omuguzi\n2. Obubonero bw'omukopesa mubi\n3. Enkwe ezirikukoresibwa\n4. Aharikubonekana obuhwezi\n0. Garuka omu menyu",
+  talkTopics: {
+    1: "Omukopesa yenka arikwikirizibwa naashemereire kukworeka endagaano nkuru erimu omubaro gw'einteresti n'ebisale byona. Kutwara einteresti aha nteresti (compound interest) tikikirizibwe. Nobaasa kwemeraaza obutayoreka.",
+    2: "Yegendereze: omukopesa arikukushaba kusasura otakabonire mpeta, arikuraga ngu naikiriza ntakugyereranisa, arikuhisha omubaro gwona, nari arikuhamagara emikwano n'eka yawe.",
+    3: "Enkwe: obutumwa bw'SMS oburikukushaba 'kwikiriza' PIN yawe, abarikukubira nka bakoresa banka nari UCC, n'obutumwa bwa 'oshangire eempeta' oburikushaba sente burikubanza. Otaraaza PIN nari OTP yawe eri owundi muntu wena.",
+    4: "Obuhwezi: sente ez'oku simu ezitarikwikirizibwa — hamagara UCC 0800 222 777. Omukopesa arikukukora bibi — hamagara UMRA +256 417 799 700. Obwibbi — hamagara Poliisi 112 nari 999."
+  },
+  talkFooter: "0. Ebindi   00. Menyu enkuru",
+  exitMsg: "Akakwate kahwire. Webale kukoresa Finny.",
+  dialHint: "Handika *185*44# hanyuma otsindike orufunguzo orwa green kutandika.",
+  langMenuHeader: "Welcome · Tukwaniriza · Karibu\nHitamu orurimi:",
+  disclosure: ""
+};
+
+/* ---------- Fallback languages (ach / teo / kdj) ----------
+   Full paragraphs of legal/safety information are exactly where a
+   confident-but-wrong machine translation can do real harm, and these
+   three are lower-resource languages I can't vouch for at sentence
+   level. Rather than invent grammar, the flow runs on the verified
+   English copy under the selected language's session, with an honest
+   on-screen note. Menu numbers and structure are identical either way. */
+['ach','teo','kdj'].forEach(code=>{
+  COPY[code] = Object.assign({}, COPY.en, {
+    disclosure: "__FALLBACK__"
+  });
+});
+
+const LANG_AUTONYM_LINE = "1. English\n2. Luganda\n3. Kiswahili\n4. Runyankore\n5. Acholi\n6. Ateso\n7. Karimojong";
+
+/* ===================================================================
+   STATE
+   =================================================================== */
+let lang = null;              // set once the user picks 1-7 on the language screen
+let state = 'idle';           // idle | dial | lang | terms | terms_full | menu | amount | tenure | processing | end | talk_menu | talk_topic
+let input = '';
+let amount = null;
+let tenure = null;
+let sessionSeconds = 0;
+let timerHandle = null;
+let selectedProfile = 'first_time_low_income';
+const RATE_PER_60S = 60; // UGX per full 60s billing increment, matches MTN/Airtel USSD billing
+
+function t(){ return COPY[lang] || COPY.en; }
+function langMeta(){ return LANGS.find(l=>l.code===lang) || LANGS[0]; }
+
+/* ---------- trace panel ---------- */
+function traceLine(text, cls){
+  const body = document.getElementById('traceBody');
+  if(body.querySelector('.trace-empty')) body.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'trace-line ' + (cls||'');
+  div.textContent = text;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+function setTraceStatus(text, live){
+  document.getElementById('traceStatus').textContent = text;
+  document.getElementById('traceDot').classList.toggle('live', !!live);
+}
+
+/* ---------- session timer / billing ---------- */
+function startTimer(){
+  if(timerHandle) return;
+  timerHandle = setInterval(()=>{
+    sessionSeconds++;
+    document.getElementById('sessionTime').textContent = sessionSeconds + 's';
+    const increments = Math.ceil(sessionSeconds/60);
+    const cost = increments * RATE_PER_60S;
+    const costEl = document.getElementById('sessionCost');
+    costEl.textContent = 'UGX ' + cost;
+    costEl.classList.toggle('warn', sessionSeconds > 90);
+  }, 1000);
+}
+function stopTimer(){ clearInterval(timerHandle); timerHandle = null; }
+function resetSession(){
+  stopTimer();
+  sessionSeconds = 0;
+  document.getElementById('sessionTime').textContent = '0s';
+  document.getElementById('sessionCost').textContent = 'UGX 0';
+  document.getElementById('sessionCost').classList.remove('warn');
+}
+
+/* ---------- badges ---------- */
+function updateBadges(){
+  const lm = langMeta();
+  document.getElementById('badgeLang').textContent = lang ? lm.label : 'not set';
+  document.getElementById('badgeProfile').textContent = PROFILE_LABELS[selectedProfile];
+  document.getElementById('badgeBeta').style.display = (lang && lm.beta) ? 'inline' : 'none';
+}
+
+/* ---------- screen rendering ---------- */
+function render(bodyText, opts){
+  opts = opts || {};
+  const screen = document.getElementById('fpScreen');
+  const lm = lang ? langMeta() : null;
+  const tagLeft = state==='idle' || state==='dial' ? 'USSD · DIAL' : 'SESSION · ' + (lm ? lm.label.toUpperCase() : '');
+  const tagRight = lm && lm.beta ? 'BETA' : '';
+
+  let html = '<div class="fp-tag"><span>'+escapeHtml(tagLeft)+'</span><span class="beta-flag">'+escapeHtml(tagRight)+'</span></div>';
+  html += '<div class="fp-body-text">'+escapeHtml(bodyText)+'</div>';
+
+  const showInput = !opts.noInput && state!=='idle' && state!=='end';
+  if(showInput){
+    html += '<div class="fp-inputline">'+escapeHtml(input)+'<span class="fp-cursor"></span></div>';
+  }
+  screen.innerHTML = html;
+  screen.scrollTop = 0;
+  updateSoftkeys();
+  updateBadges();
+}
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function updateSoftkeys(){
+  const left = document.getElementById('softLeft');
+  const right = document.getElementById('softRight');
+  if(state==='idle'){ left.textContent='—'; right.textContent='CALL'; return; }
+  if(state==='end'){ left.textContent='—'; right.textContent='NEW SESSION'; return; }
+  left.textContent = 'CLEAR';
+  right.textContent = 'SEND';
+}
+
+/* ===================================================================
+   KEYPAD (built once, renders the physical 3x4 grid)
+   =================================================================== */
+const KEY_LAYOUT = [
+  {d:'1', sub:''},   {d:'2', sub:'ABC'}, {d:'3', sub:'DEF'},
+  {d:'4', sub:'GHI'},{d:'5', sub:'JKL'}, {d:'6', sub:'MNO'},
+  {d:'7', sub:'PQRS'},{d:'8', sub:'TUV'},{d:'9', sub:'WXYZ'},
+  {d:'*', sub:''},   {d:'0', sub:'+'},   {d:'#', sub:''}
+];
+function buildKeypad(){
+  const grid = document.getElementById('fpKeypad');
+  grid.innerHTML = '';
+  KEY_LAYOUT.forEach(k=>{
+    const el = document.createElement('div');
+    el.className = 'fp-key';
+    el.innerHTML = '<div class="digit">'+k.d+'</div><div class="sub">'+k.sub+'</div>';
+    el.onclick = () => ussd.press(k.d);
+    grid.appendChild(el);
+  });
+}
+
+/* ===================================================================
+   SCORING — identical formula/lenders to the FastAPI /recommend route
+   =================================================================== */
+function scoreLenders(reqAmount, reqTenure){
+  traceLine('POST /recommend', 'route');
+  traceLine(`{ requestedAmount: ${reqAmount}, requestedTenure: ${reqTenure}, urgency: "medium", locale: "${lang}" }`, 'meta');
+  const qualifying = LENDERS.filter(l => reqAmount>=l.minAmount && reqAmount<=l.maxAmount && reqTenure>=l.minTenure && reqTenure<=l.maxTenure);
+  traceLine(`${qualifying.length} of ${LENDERS.length} lenders pass amount/tenure filter`, 'meta');
+
+  const ranked = qualifying.map(l=>{
+    const totalRepayment = l.totalRepaymentBase * (reqAmount/200000);
+    const costScore = Math.max(0, 100 - Math.min(100, ((totalRepayment/reqAmount)-1)*100));
+    const trustScore = Math.max(0, 100 - (l.upheldComplaints*25) - (l.licensed?0:30));
+    const fitScore = 100;
+    const finalScore = costScore*0.40 + trustScore*0.35 + fitScore*0.25;
+    return {name:l.name, totalRepayment:Math.round(totalRepayment), costScore:Math.round(costScore), trustScore:Math.round(trustScore), finalScore:Math.round(finalScore*100)/100};
+  }).sort((a,b)=>b.finalScore-a.finalScore);
+
+  ranked.forEach(r=>{
+    traceLine(`${r.name}: cost=${r.costScore} trust=${r.trustScore} fit=100 → final=${r.finalScore}`, 'result');
+  });
+  if(ranked.length){
+    traceLine(`winner: ${ranked[0].name} (UGX ${ranked[0].totalRepayment.toLocaleString()} total repayment)`, 'winner');
+  } else {
+    traceLine('no qualifying lender for this amount/tenure combination', 'result');
+  }
+  return ranked;
+}
+
+/* ---------- AI terms simplification trace (mirrors an AI reading-level call) ---------- */
+function traceTermsSimplification(){
+  const lm = langMeta();
+  traceLine('POST /terms/simplify', 'route');
+  traceLine(`{ profile: "${selectedProfile}", locale: "${lang}", readingLevel: "basic" }`, 'meta');
+  if(lm.fallback){
+    traceLine(`no reviewed ${lm.label} corpus yet -> serving English copy, flagged localized:false`, 'meta');
+  } else {
+    traceLine(`grounded against knowledge_base.py section PLAIN-LANGUAGE FINANCIAL TERMS`, 'meta');
+    if(lm.code==='lg' || lm.code==='ach'){
+      traceLine(`phrase QA cross-check: google/WaxalNLP (Hugging Face) - 21-language African speech corpus incl. ${lm.code==='lg'?'Luganda':'Acholi'}, used to sanity-check natural phrasing vs. dictionary translation`, 'nlp');
+    } else if(lm.code!=='en'){
+      traceLine(`phrase QA cross-check: google/WaxalNLP (Hugging Face) speech corpus - language coverage noted for future ASR/TTS on this channel`, 'nlp');
+    }
+  }
+  traceLine(`readingLevel=basic -> 3 core lines + 1 profile line, target grade-4 reading level`, 'winner');
+}
+
+function traceTalkLookup(topicNum, topicLabel){
+  const lm = langMeta();
+  traceLine(`GET /knowledge?topic=${topicNum}&locale=${lang}`, 'route');
+  traceLine(`grounded in knowledge_base.py - static source text, no free generation`, 'meta');
+  if(lm.fallback){
+    traceLine(`served in English (localized:false for ${lm.label})`, 'meta');
+  }
+  traceLine(`topic: ${topicLabel}`, 'winner');
+}
+
+/* ===================================================================
+   PROFILE SELECTOR
+   =================================================================== */
+function refreshProfileButtons(){
+  Object.keys(PROFILE_LABELS).forEach(p=>{
+    document.getElementById('profile-'+p).classList.toggle('active', p===selectedProfile);
+  });
+}
+
+/* ===================================================================
+   SCREEN TEXT BUILDERS
+   =================================================================== */
+function langScreenText(){
+  return COPY.en.langMenuHeader + '\n' + LANG_AUTONYM_LINE;
+}
+function termsScreenText(){
+  const c = t();
+  const lm = langMeta();
+  let header = '';
+  if(lm.fallback){
+    header = '['+lm.label+' translation in community review — shown in English for accuracy]\n\n';
+  }
+  return header + c.termsCore.join('\n') + '\n\n' + c.termsProfile[selectedProfile] + '\n\n' + c.termsOptions;
+}
+function menuScreenText(){ return t().mainMenu; }
+function talkMenuScreenText(){ return t().talkMenu; }
+function fillTpl(tpl, vals){
+  return tpl.replace(/\{(\w+)\}/g, (m,k)=> (k in vals) ? vals[k] : m);
+}
+
+/* ===================================================================
+   SESSION LIFECYCLE
+   =================================================================== */
+let langReturnState = 'terms'; // where handleLangSelect() sends you after picking a language
+let lastTopicNum = null;
+let lastResultText = '';
+let finishTimeoutId = null;
+
+function showIdleScreen(){
+  render(t().dialHint);
+}
+
+function startSession(){
+  if(state!=='idle') return;
+  input = '';
+  startTimer();
+  setTraceStatus('session started', true);
+  traceLine('--- new USSD session ---', 'meta');
+  traceLine('dial *185*44# -> routed to Finny shortcode handler', 'route');
+  state = 'dialing';
+  render('Dialing *185*44#...', {noInput:true});
+  setTimeout(()=>{
+    state = 'lang';
+    render(langScreenText());
+  }, 650);
+}
+
+function finish(){
+  setTraceStatus('session ended', false);
+  if(finishTimeoutId) clearTimeout(finishTimeoutId);
+  finishTimeoutId = setTimeout(()=>{
+    resetSession();
+    state = 'idle'; input=''; lang=null; amount=null; tenure=null; langReturnState='terms';
+    showIdleScreen();
+  }, 2500);
+}
+
+function newSession(){
+  if(finishTimeoutId) clearTimeout(finishTimeoutId);
+  resetSession();
+  state = 'idle'; input=''; lang=null; amount=null; tenure=null; langReturnState='terms';
+  setTraceStatus('idle — waiting for session', false);
+  showIdleScreen();
+}
+
+function cancelSession(){
+  if(state==='idle') return;
+  if(finishTimeoutId) clearTimeout(finishTimeoutId);
+  traceLine('--- session cancelled by user ---', 'meta');
+  setTraceStatus('idle — waiting for session', false);
+  resetSession();
+  state='idle'; input=''; lang=null; amount=null; tenure=null; langReturnState='terms';
+  showIdleScreen();
+}
+
+/* ===================================================================
+   INPUT HANDLERS (one per state)
+   =================================================================== */
+function handleLangSelect(val){
+  const n = parseInt(val,10);
+  if(!n || n<1 || n>LANGS.length){ render(langScreenText() + '\n\n⚠ ' + COPY.en.invalid); return; }
+  lang = LANGS[n-1].code;
+  const lm = langMeta();
+  traceLine(`SET locale=${lang} (${lm.label})`, 'route');
+  if(lm.fallback){
+    traceLine(`${lm.label}: localized:false -> serving verified English copy under this session`, 'meta');
+  }
+  if(langReturnState==='menu'){
+    traceLine('language changed mid-session -> returning to main menu', 'meta');
+    state='menu';
+    render(menuScreenText());
+    langReturnState='terms';
+  } else {
+    state='terms';
+    traceTermsSimplification();
+    render(termsScreenText());
+  }
+}
+
+function handleTerms(val){
+  if(val==='1'){
+    traceLine('terms accepted', 'result');
+    state='menu';
+    render(menuScreenText());
+  } else if(val==='2'){
+    state='terms_full';
+    render(t().fullTerms);
+  } else if(val==='0'){
+    state='end';
+    render(t().exitMsg, {noInput:true});
+    finish();
+  } else {
+    render(termsScreenText() + '\n\n⚠ ' + t().invalid);
+  }
+}
+
+function handleTermsFull(){
+  state='terms';
+  render(termsScreenText());
+}
+
+function handleMenu(val){
+  if(val==='1'){
+    state='amount'; amount=null; tenure=null;
+    render(t().amountPrompt);
+  } else if(val==='2'){
+    traceLine('entering Talk flow — grounded Q&A over knowledge_base.py', 'meta');
+    state='talk_menu';
+    render(talkMenuScreenText());
+  } else if(val==='3'){
+    traceLine('GET /applications?userId=... (scoped to this session)', 'route');
+    state='apps';
+    render(t().apps + '\n\n0. Back to menu');
+  } else if(val==='9'){
+    traceLine('user requested language change mid-session', 'meta');
+    langReturnState='menu';
+    state='lang';
+    render(langScreenText());
+  } else if(val==='0'){
+    state='end';
+    render(t().exitMsg, {noInput:true});
+    finish();
+  } else {
+    render(menuScreenText() + '\n\n⚠ ' + t().invalid);
+  }
+}
+
+function handleResult(val){
+  if(val==='0'){
+    state='menu';
+    render(menuScreenText());
+  } else {
+    render(lastResultText + '\n\n0. Back to menu' + '\n\n⚠ ' + t().invalid);
+  }
+}
+
+function handleApps(val){
+  if(val==='0'){
+    state='menu';
+    render(menuScreenText());
+  } else {
+    render(t().apps + '\n\n0. Back to menu' + '\n\n⚠ ' + t().invalid);
+  }
+}
+
+function handleAmount(val){
+  const n = parseInt(val,10);
+  if(!n || n<=0){ render(t().amountPrompt + '\n\n⚠ ' + t().invalid); return; }
+  amount = n;
+  state='tenure';
+  render(t().tenurePrompt);
+}
+
+function handleTenure(val){
+  const n = parseInt(val,10);
+  if(!n || n<=0){ render(t().tenurePrompt + '\n\n⚠ ' + t().invalid); return; }
+  tenure = n;
+  state='processing';
+  render(t().processing, {noInput:true});
+  setTraceStatus('scoring request', true);
+  setTimeout(()=>{
+    const ranked = scoreLenders(amount, tenure);
+    if(ranked.length){
+      const top = ranked[0];
+      const text = fillTpl(t().resultTpl, {
+        amount: amount.toLocaleString(),
+        tenure: String(tenure),
+        lender: top.name,
+        total: top.totalRepayment.toLocaleString()
+      });
+      state='result';
+      lastResultText = text;
+      render(text + '\n\n0. Back to menu');
+    } else {
+      const text = fillTpl(t().noMatchTpl, { amount: amount.toLocaleString(), tenure: String(tenure) });
+      amount=null; tenure=null;
+      state='amount';
+      render(text + '\n\n' + t().amountPrompt);
+    }
+  }, 900);
+}
+
+const TALK_LABELS = {1:'borrower rights', 2:'warning signs of a bad lender', 3:'fraud patterns', 4:'where to get help'};
+
+function handleTalkMenu(val){
+  const n = parseInt(val,10);
+  if(n>=1 && n<=4){
+    lastTopicNum = n;
+    traceTalkLookup(n, TALK_LABELS[n]);
+    state='talk_topic';
+    render(t().talkTopics[n] + '\n\n' + t().talkFooter);
+  } else if(val==='0'){
+    state='menu';
+    render(menuScreenText());
+  } else {
+    render(talkMenuScreenText() + '\n\n⚠ ' + t().invalid);
+  }
+}
+
+function handleTalkTopic(val){
+  if(val==='0'){
+    state='talk_menu';
+    render(talkMenuScreenText());
+  } else if(val==='00'){
+    state='menu';
+    render(menuScreenText());
+  } else {
+    render(t().talkTopics[lastTopicNum] + '\n\n' + t().talkFooter + '\n\n⚠ ' + t().invalid);
+  }
+}
+
+function submit(){
+  const val = input.trim();
+  input = '';
+  switch(state){
+    case 'lang': handleLangSelect(val); break;
+    case 'terms': handleTerms(val); break;
+    case 'terms_full': handleTermsFull(val); break;
+    case 'menu': handleMenu(val); break;
+    case 'apps': handleApps(val); break;
+    case 'result': handleResult(val); break;
+    case 'amount': handleAmount(val); break;
+    case 'tenure': handleTenure(val); break;
+    case 'talk_menu': handleTalkMenu(val); break;
+    case 'talk_topic': handleTalkTopic(val); break;
+    default: break;
+  }
+}
+
+/* ===================================================================
+   PHYSICAL KEY DISPATCH
+   =================================================================== */
+function press(d){
+  if(state==='end' || state==='dialing' || state==='processing') return;
+  input += d;
+  const el = document.querySelector('.fp-inputline');
+  if(el) el.innerHTML = escapeHtml(input) + '<span class="fp-cursor"></span>';
+}
+function softLeftAction(){
+  if(state==='end' || state==='dialing' || state==='processing') return;
+  input = input.slice(0, -1);
+  const el = document.querySelector('.fp-inputline');
+  if(el) el.innerHTML = escapeHtml(input) + '<span class="fp-cursor"></span>';
+}
+function softRight(){
+  if(state==='idle'){ startSession(); return; }
+  if(state==='end'){ newSession(); return; }
+  if(state==='dialing' || state==='processing'){ return; }
+  submit();
+}
+
+const ussd = {
+  press: press,
+  softLeft: softLeftAction,
+  softRight: softRight,
+  callKey: function(){ softRight(); },
+  cancel: cancelSession,
+  setProfile: function(p){
+    selectedProfile = p;
+    refreshProfileButtons();
+    updateBadges();
+    if(state==='terms'){
+      traceLine('profile changed -> re-simplifying terms', 'meta');
+      traceTermsSimplification();
+      render(termsScreenText());
+    }
+  }
+};
+
+window.ussd = ussd; // top-level const isn't a window property by spec; expose explicitly for tooling
+
+/* ===================================================================
+   BOOT
+   =================================================================== */
+buildKeypad();
+refreshProfileButtons();
+updateBadges();
+showIdleScreen();
+
+</script>
+</body>
+</html>

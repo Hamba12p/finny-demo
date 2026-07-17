@@ -1,0 +1,15 @@
+{
+  "name": "finny-demo",
+  "version": "1.0.0",
+  "description": "Finny — mocked loan marketplace & USSD demo (BOU@60 hackathon build)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  }
+}
